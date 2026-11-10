@@ -44,6 +44,11 @@ This subskill ships the scripts that build the data-pipeline reports and
 posters. Each runtime host creates its own virtualenv inside the data tree on
 first run; the scripts auto-bootstrap that environment before continuing.
 
+Interactive grower-level web maps from the same canonical boundaries are
+documented in [`grower-web-map/`](grower-web-map/README.md): one lightweight
+HTML file per grower on an ESRI World Imagery basemap, with zoom controls,
+clickable field popups, and a field-list navigator.
+
 ## Quick start
 
 ```bash
