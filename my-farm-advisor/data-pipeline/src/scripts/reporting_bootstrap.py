@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from lib.runtime_paths import resolve_runtime_paths
+from lib.us_states import state_abbr
 
 
 _RUNTIME_PATHS = resolve_runtime_paths()
@@ -162,6 +163,23 @@ def _write_text(path: Path, text: str, *, overwrite: bool = True) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _boundary_identity(boundary_path: Path) -> tuple[str, str]:
+    """Derive (state_abbr, country) from a farm boundary, fallback ("", "US")."""
+    if not boundary_path.exists():
+        return "", "US"
+    try:
+        payload = json.loads(boundary_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "", "US"
+    for feature in payload.get("features", []):
+        props = feature.get("properties") or {}
+        abbr = state_abbr(props.get("state")) or state_abbr(props.get("state_fips"))
+        country = str(props.get("country") or "").strip().upper()
+        if abbr or country:
+            return abbr or "", country or "US"
+    return "", "US"
 
 
 def ensure_canonical_field_artifacts(
@@ -394,6 +412,7 @@ def ensure_canonical_data_tree(
             "display_name": grower_slug,
             "notes": "Canonical grower metadata",
         },
+        overwrite=False,
     )
     _write_text(grower / "logs" / "pipeline_runs.jsonl", "", overwrite=False)
 
@@ -406,17 +425,20 @@ def ensure_canonical_data_tree(
     (farm / "derived" / "summaries").mkdir(parents=True, exist_ok=True)
     (farm / "derived" / "dashboards").mkdir(parents=True, exist_ok=True)
     (farm / "derived" / "tables").mkdir(parents=True, exist_ok=True)
+    boundary_path = farm / "boundary" / "field_boundaries.geojson"
+    boundary_state, boundary_country = _boundary_identity(boundary_path)
     _write_json(
         farm / "farm.json",
         {
             "grower_slug": grower_slug,
             "farm_slug": farm_slug,
             "display_name": farm_name,
-            "state": "IA",
-            "country": "US",
+            "state": boundary_state,
+            "country": boundary_country,
             "default_crs": "EPSG:4326",
             "notes": "Canonical farm metadata",
         },
+        overwrite=False,
     )
     _write_text(farm / "logs" / "pipeline_runs.jsonl", "", overwrite=False)
 

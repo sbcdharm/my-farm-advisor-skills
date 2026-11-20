@@ -1,0 +1,13 @@
+grower,from_crop,to_crop,count,probability
+IA,Corn,Corn,1,0.05
+IA,Corn,Soybeans,19,0.95
+IA,Soybeans,Corn,20,1.0
+IA,Soybeans,Soybeans,0,0.0
+IL,Corn,Corn,4,0.18181818181818182
+IL,Corn,Soybeans,18,0.8181818181818182
+IL,Soybeans,Corn,18,1.0
+IL,Soybeans,Soybeans,0,0.0
+NE,Corn,Corn,27,0.7941176470588235
+NE,Corn,Soybeans,7,0.20588235294117646
+NE,Soybeans,Corn,6,1.0
+NE,Soybeans,Soybeans,0,0.0

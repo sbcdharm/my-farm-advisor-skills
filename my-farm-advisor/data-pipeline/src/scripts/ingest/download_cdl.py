@@ -29,6 +29,7 @@ from paths import (
     shared_cdl_state_raster_path,
 )
 from reporting_bootstrap import ensure_skill_path
+from us_states import normalize_state_fips
 
 ensure_skill_path("cdl-cropland")
 
@@ -39,14 +40,28 @@ DEFAULT_CDL_LATEST_YEAR = 2023  # 2026 program data rule: external data must be 
 DEFAULT_CDL_WINDOW_YEARS = 5
 
 
+def _resolve_state_label(*, conus: bool, state_fips: str | None) -> str:
+    if conus:
+        return "CONUS"
+    resolved = normalize_state_fips(state_fips)
+    if not resolved:
+        raise ValueError(
+            "state CDL coverage requires a resolvable state FIPS; "
+            "refusing to fall back to a default state"
+        )
+    return resolved
+
+
 def _cdl_coverage_label(*, conus: bool, state_fips: str | None = None) -> str:
-    return "CONUS" if conus else str(state_fips or "19").zfill(2)
+    return _resolve_state_label(conus=conus, state_fips=state_fips)
 
 
 def _cdl_raster_path(year: int, *, conus: bool, state_fips: str | None = None) -> Path:
     if conus:
         return shared_cdl_conus_raster_path(year)
-    return shared_cdl_state_raster_path(year, str(state_fips or "19"))
+    return shared_cdl_state_raster_path(
+        year, _resolve_state_label(conus=conus, state_fips=state_fips)
+    )
 
 
 def _download_cdl_raster(
@@ -76,15 +91,16 @@ def _download_cdl_raster(
     return cdl_path
 
 
-def download_cdl(year, state_fips="19"):
+def download_cdl(year, state_fips: str | None = None):
     """Return a CDL raster for a farm state, preferring shared CONUS rasters."""
-    state_path = shared_cdl_state_raster_path(year, str(state_fips))
+    resolved = _resolve_state_label(conus=False, state_fips=state_fips)
+    state_path = shared_cdl_state_raster_path(year, resolved)
     if state_path.exists():
         return state_path
     conus_path = shared_cdl_conus_raster_path(year)
     if conus_path.exists():
         return conus_path
-    return _download_cdl_raster(year, state_fips=str(state_fips))
+    return _download_cdl_raster(year, state_fips=resolved)
 
 
 def _target_cdl_years(
@@ -123,7 +139,18 @@ def prepare_shared_cdl_rasters(
 ) -> list[Path]:
     """Download shared CDL rasters for runtime initialization."""
     candidates = years or _target_cdl_years(window_years=window_years, latest_year=latest_year)
-    state_fips_values = state_fips_values or ["19"]
+    resolved_states: list[str] = []
+    for value in state_fips_values or []:
+        fips = normalize_state_fips(value)
+        if not fips:
+            raise ValueError(f"Unknown state FIPS selector: {value}")
+        if fips not in resolved_states:
+            resolved_states.append(fips)
+    if scope == "state" and not resolved_states:
+        raise ValueError(
+            "state CDL scope requires at least one state FIPS; "
+            "refusing to fall back to a default state"
+        )
     completed: list[Path] = []
     completed_years: set[int] = set()
     for year in candidates:
@@ -133,7 +160,7 @@ def prepare_shared_cdl_rasters(
             if scope == "conus":
                 completed.append(_download_cdl_raster(year, conus=True, force=force))
             elif scope == "state":
-                for state_fips in state_fips_values:
+                for state_fips in resolved_states:
                     completed.append(
                         _download_cdl_raster(year, state_fips=state_fips, force=force)
                     )
@@ -189,13 +216,40 @@ def parse_args() -> argparse.Namespace:
 
 
 def _state_fips_values(fields: gpd.GeoDataFrame) -> list[str]:
-    if "state_fips" not in fields.columns:
-        return ["19"]
-    values = (
-        pd.Series(fields["state_fips"], dtype="object").fillna("").astype(str).str.strip().tolist()
+    """Resolve US field state FIPS without guessing a default state.
+
+    Boundaries written by older CSB ingestion carry `state` but no
+    `state_fips`; the previous Iowa ("19") fallback silently routed those farms
+    to the wrong CDL raster.
+    """
+    if fields.empty:
+        return []
+    fips_series = (
+        fields["state_fips"]
+        if "state_fips" in fields.columns
+        else pd.Series([""] * len(fields), index=fields.index)
     )
-    unique_values = sorted({value.zfill(2) for value in values if value})
-    return unique_values or ["19"]
+    state_series = (
+        fields["state"]
+        if "state" in fields.columns
+        else pd.Series([""] * len(fields), index=fields.index)
+    )
+    id_series = fields["field_id"] if "field_id" in fields.columns else fields.index
+    resolved: set[str] = set()
+    unresolved: list[str] = []
+    for field_id, raw_fips, raw_state in zip(id_series, fips_series, state_series):
+        fips = normalize_state_fips(raw_fips) or normalize_state_fips(raw_state)
+        if fips:
+            resolved.add(fips)
+        else:
+            unresolved.append(str(field_id))
+    if unresolved:
+        raise RuntimeError(
+            "Unable to resolve a US state FIPS for field(s): "
+            + ", ".join(sorted(unresolved)[:8])
+            + "; add a `state_fips` property or a `state` abbreviation to the farm boundary"
+        )
+    return sorted(resolved)
 
 
 def _table_field_ids(csv_path: Path) -> set[str]:

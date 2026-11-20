@@ -8,6 +8,11 @@ Soil provider selection by boundary `country`:
 Per-year crop rotation/crop-type sources by country (CDL, AAFC ACI, and the
 keyless WorldCereal default-model path for every other country):
 [references/crop-rotation-sources.md](references/crop-rotation-sources.md).
+Growing an existing demo farm to more fields, or adding a new state grower,
+without re-running the full pipeline:
+[references/dataset-expansion.md](references/dataset-expansion.md).
+Cross-grower field-level EDA (static figures, tables, and a reproducibility
+manifest): [../eda/field-level-eda/GUIDE.md](../eda/field-level-eda/GUIDE.md).
 ## Example renders
 
 Vision-QC'd sample figures ship under [`examples/`](examples/) — one
