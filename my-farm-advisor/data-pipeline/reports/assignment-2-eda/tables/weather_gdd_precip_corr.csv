@@ -1,0 +1,7 @@
+scope,unit,n,spearman_rho,spearman_p,p_method,pearson_r,pearson_p,note,slope_in_per_100f_gdd
+season_index,season,5,-0.9999999999999999,0.016666666666666666,exact permutation,-0.9191250201354227,,Regional index: mean of the three farms per season.,-5.239091045188577
+IL,grower-year,5,0.39999999999999997,0.5166666666666667,exact permutation,0.2371432033999892,,Within-farm season association.,1.2123784573401566
+IA,grower-year,5,-0.8999999999999998,0.08333333333333333,exact permutation,-0.9107260724963531,,Within-farm season association.,-3.8259591023732815
+NE,grower-year,5,-0.8999999999999998,0.08333333333333333,exact permutation,-0.7412408891985107,,Within-farm season association.,-2.4708690462695193
+grower_means,location,3,-1.0,,descriptive (n=3 locations),-0.999939879954012,,"Descriptive only: three locations, and GDD/precipitation are rank-confounded with geography.",-0.7795253046734654
+pooled_within_grower,grower-year (anomaly),15,-0.7107142857142856,,cluster permutation,-0.7322941200953859,0.0170982901709829,"Descriptive: growing seasons are shared across farms, so this p-value is optimistic.",-2.916513406158445

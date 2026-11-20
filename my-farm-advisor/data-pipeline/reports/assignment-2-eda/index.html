@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thirty fields, three growers — Assignment #2 field-level EDA</title>
+<meta name="description" content="Cross-grower field-level exploratory analysis of 30 fields in Illinois, Iowa, and Nebraska: boundaries, weather, heat–rainfall coupling, and corn rotation history.">
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --ink:#1e2328;
+    --muted:#5b636d;
+    --soft:#7a828c;
+    --paper:#fbfaf6;
+    --card:#ffffff;
+    --rule:#ddd8cd;
+    --rule-strong:#c3bcad;
+    --blue:#0072B2;
+    --orange:#D55E00;
+    --green:#009E73;
+    --accent:#2f6f4e;
+    --warn:#8a4b12;
+    --wash:#f3f0e8;
+    --shadow:0 1px 2px rgba(30,35,40,.06), 0 8px 28px rgba(30,35,40,.05);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-size:18px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:#1f5f8b;text-decoration-thickness:.06em;text-underline-offset:.16em}
+  a:hover{color:#123f5d}
+  a:focus-visible,summary:focus-visible{outline:3px solid #9fc6e3;outline-offset:3px;border-radius:2px}
+  .skip{position:absolute;left:-9999px;top:0;background:#fff;padding:.6rem 1rem;z-index:20}
+  .skip:focus{left:1rem;top:1rem}
+  .wrap{width:min(1080px,calc(100% - 2.5rem));margin-inline:auto}
+  .sans{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+
+  /* ---------- hero ---------- */
+  .hero{
+    background:
+      radial-gradient(1100px 380px at 12% -10%, #eef3ea 0%, rgba(238,243,234,0) 62%),
+      linear-gradient(180deg,#f7f5ef 0%, #fbfaf6 100%);
+    border-bottom:1px solid var(--rule);
+    padding:3.2rem 0 2.6rem;
+  }
+  .eyebrow{
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin:0 0 .9rem
+  }
+  h1{
+    font-size:clamp(2rem,4.4vw,3.3rem);
+    line-height:1.08;letter-spacing:-.02em;margin:0 0 1rem;font-weight:600;max-width:21ch
+  }
+  .lede{font-size:1.16rem;line-height:1.55;color:#39414a;max-width:64ch;margin:0 0 1.6rem}
+  .hero-meta{
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem;
+    border-top:1px solid var(--rule);padding-top:1.1rem;margin-top:.2rem
+  }
+  .hero-meta div{padding-right:.4rem}
+  .hero-meta b{display:block;font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:1.22rem;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+  .hero-meta span{display:block;font-size:.74rem;color:var(--muted);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    text-transform:uppercase;letter-spacing:.08em;margin-top:.2rem}
+  .hero-note{
+    margin-top:1.5rem;background:#fff;border:1px solid var(--rule);
+    border-left:4px solid var(--warn);padding:.85rem 1rem;border-radius:4px;
+    font-size:.9rem;line-height:1.5;color:#4a4038;max-width:78ch
+  }
+
+  /* ---------- toc ---------- */
+  .toc{
+    position:sticky;top:0;z-index:10;background:rgba(251,250,246,.94);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)
+  }
+  .toc ol{
+    list-style:none;margin:0;padding:.7rem 0;display:flex;gap:1.35rem;overflow-x:auto;
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.78rem;letter-spacing:.02em;white-space:nowrap;scrollbar-width:none
+  }
+  .toc ol::-webkit-scrollbar{display:none}
+  .toc a{color:#4c555f;text-decoration:none;padding-bottom:.15rem;border-bottom:2px solid transparent}
+  .toc a:hover{color:var(--ink);border-bottom-color:var(--rule-strong)}
+  .toc .num{color:var(--soft);font-variant-numeric:tabular-nums;margin-right:.35rem}
+
+  /* ---------- sections ---------- */
+  main{padding:0 0 4rem}
+  section{padding:3.2rem 0 0;scroll-margin-top:3.4rem}
+  .sec-head{display:flex;align-items:baseline;gap:.9rem;border-bottom:1px solid var(--rule);padding-bottom:.55rem;margin-bottom:1.5rem}
+  .sec-head .no{
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.75rem;letter-spacing:.1em;color:var(--accent);font-weight:700;
+    border:1px solid #cdd8ce;background:#edf2ea;border-radius:999px;padding:.2rem .55rem
+  }
+  h2{font-size:clamp(1.45rem,2.5vw,1.95rem);line-height:1.2;letter-spacing:-.015em;margin:0;font-weight:600}
+  h3{font-size:1.16rem;letter-spacing:-.01em;margin:2.1rem 0 .55rem;font-weight:650}
+  h4{font-size:.98rem;margin:1.5rem 0 .4rem;font-weight:650}
+  p{margin:0 0 1rem;max-width:72ch}
+  .kicker{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.75rem;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);margin:0 0 .7rem}
+  ul,ol{margin:0 0 1rem;padding-left:1.25rem;max-width:72ch}
+  li{margin:.32rem 0}
+  li::marker{color:var(--soft)}
+  strong{font-weight:650}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em;
+    background:#f0ede5;border:1px solid #e2ddd1;border-radius:3px;padding:.05em .3em
+  }
+
+  /* ---------- statistics cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.9rem;margin:1.4rem 0 1.6rem}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:1rem 1.05rem;box-shadow:var(--shadow)}
+  .card .v{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:1.55rem;font-weight:650;letter-spacing:-.02em;line-height:1.1;display:block}
+  .card .l{font-size:.78rem;color:var(--muted);display:block;margin-top:.3rem;line-height:1.35}
+  .card .s{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.7rem;color:var(--soft);display:block;margin-top:.35rem}
+  .dot{display:inline-block;width:.62em;height:.62em;border-radius:50%;margin-right:.38em;vertical-align:.02em}
+
+  /* ---------- figures ---------- */
+  figure{margin:1.7rem 0 2rem;background:var(--card);border:1px solid var(--rule);border-radius:8px;
+    padding:.7rem .7rem .2rem;box-shadow:var(--shadow)}
+  figure img{display:block;width:100%;height:auto;border-radius:4px;background:#fff}
+  figcaption{padding:.75rem .35rem .65rem;font-size:.86rem;line-height:1.5;color:#414a53}
+  figcaption b{color:var(--ink);font-weight:650}
+  figcaption .tag{
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin-right:.45rem
+  }
+  figcaption a{white-space:nowrap}
+  .figwide{width:100%}
+
+  /* ---------- tables ---------- */
+  .table-wrap{overflow-x:auto;margin:1rem 0 1.6rem;border:1px solid var(--rule);border-radius:8px;background:var(--card)}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-variant-numeric:tabular-nums}
+  caption{caption-side:top;text-align:left;padding:.75rem .9rem .3rem;font-size:.8rem;color:var(--muted)}
+  th,td{padding:.5rem .8rem;text-align:left;border-bottom:1px solid #ebe7dd;vertical-align:top}
+  thead th{font-size:.7rem;letter-spacing:.07em;text-transform:uppercase;color:#4a535d;
+    background:#f5f2ea;border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:#faf8f2}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .nowrap{white-space:nowrap}
+
+  /* ---------- callouts ---------- */
+  .callout{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);
+    border-radius:6px;padding:1rem 1.15rem;margin:1.4rem 0;box-shadow:var(--shadow)}
+  .callout.warn{border-left-color:var(--warn);background:#fffdf8}
+  .callout .h{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--accent);margin:0 0 .45rem}
+  .callout.warn .h{color:var(--warn)}
+  .callout p:last-child{margin-bottom:0}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.4rem 0}
+  .split .callout{margin:0}
+  .split ul{margin-bottom:0}
+  .yes{border-left-color:#2f6f4e!important}
+  .no{border-left-color:#9b3d2e!important}
+  .no .h{color:#9b3d2e!important}
+
+  /* ---------- index ---------- */
+  .index-group{margin:1.6rem 0 2rem}
+  .index-group h3{margin-top:0}
+  .index-list{list-style:none;padding:0;margin:.4rem 0 0;display:grid;gap:.35rem}
+  .index-list li{
+    display:grid;grid-template-columns:minmax(230px,1.1fr) 2fr;gap:.9rem;
+    padding:.5rem .1rem;border-bottom:1px solid #ece8de;font-size:.85rem;margin:0
+  }
+  .index-list code{background:none;border:0;padding:0;font-size:.82rem}
+  .index-list .desc{color:var(--muted);line-height:1.45}
+  .new{
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    color:#1d5c3d;background:#e6f0e9;border:1px solid #c8ddcf;border-radius:3px;
+    padding:.08rem .32rem;margin-left:.4rem;vertical-align:.08em
+  }
+  .pill-row{display:flex;flex-wrap:wrap;gap:.4rem;margin:.8rem 0 1.2rem}
+  .pill{font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:.72rem;color:#4a535d;background:#f2efe7;border:1px solid var(--rule);
+    border-radius:999px;padding:.24rem .62rem}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--rule);background:#f6f3ec;padding:2rem 0 2.6rem;margin-top:1rem}
+  footer p{font-size:.82rem;color:var(--muted);max-width:78ch}
+  footer .small{font-size:.75rem;color:var(--soft)}
+
+  @media (max-width:820px){
+    body{font-size:17px}
+    .hero-meta{grid-template-columns:repeat(2,1fr);row-gap:.9rem}
+    .split{grid-template-columns:1fr}
+    .index-list li{grid-template-columns:1fr;gap:.15rem}
+    .toc ol{gap:1rem}
+  }
+  @media (max-width:520px){
+    .wrap{width:calc(100% - 1.6rem)}
+    .hero{padding-top:2.2rem}
+    .hero-meta{grid-template-columns:1fr 1fr}
+  }
+  @media print{
+    .toc{display:none}
+    body{background:#fff;font-size:11pt}
+    .hero{background:#fff}
+    figure,.card,.callout,.table-wrap{box-shadow:none}
+    figure{break-inside:avoid}
+    section{padding-top:1.6rem}
+    a{color:inherit;text-decoration:none}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the analysis</a>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Assignment #2 · My Farm Advisor · Field-level EDA</p>
+    <h1>Thirty fields, three growers — what the data can and cannot say</h1>
+    <p class="lede">
+      A field-level comparison of three row-crop farms in Illinois, Iowa, and Nebraska.
+      The report separates three questions that are easy to blur together: how the
+      fields are shaped, how the seasons differed, and whether corn follows corn.
+      Every claim below is tied to a table or figure in this folder.
+    </p>
+    <div class="hero-meta">
+      <div><b>30</b><span>fields</span></div>
+      <div><b>3</b><span>growers</span></div>
+      <div><b>14,546.32 ac</b><span>total boundary area</span></div>
+      <div><b>2021–2025</b><span>weather seasons</span></div>
+      <div><b>2019–2023</b><span>CDL years</span></div>
+    </div>
+    <p class="hero-note">
+      <strong>Observational, not causal.</strong> These are 30 real field boundaries,
+      a 0.5° × 0.625° weather product, and a 30 m crop-classification product. Nothing here
+      measures yield, irrigation, soil water, management, or economics. A pattern
+      that survives a test is still an association in this sample of three
+      locations and five seasons.
+    </p>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Section navigation">
+  <div class="wrap">
+    <ol>
+      <li><a href="#scope"><span class="num">01</span>Scope &amp; data</a></li>
+      <li><a href="#boundaries"><span class="num">02</span>Field boundaries</a></li>
+      <li><a href="#weather"><span class="num">03</span>Growing seasons</a></li>
+      <li><a href="#coupling"><span class="num">04</span>Heat–rain coupling</a></li>
+      <li><a href="#history"><span class="num">05</span>Crop history</a></li>
+      <li><a href="#corncorn"><span class="num">06</span>Corn after corn</a></li>
+      <li><a href="#map"><span class="num">07</span>Geography</a></li>
+      <li><a href="#limits"><span class="num">08</span>Limits</a></li>
+      <li><a href="#index"><span class="num">09</span>Analysis index</a></li>
+    </ol>
+  </div>
+</nav>
+
+<main id="main">
+  <div class="wrap">
+
+    <!-- ================= 01 SCOPE ================= -->
+    <section id="scope">
+      <div class="sec-head"><span class="no">01</span><h2>Scope, grain, and the three facts that govern every caveat</h2></div>
+
+      <p>
+        The sample is deliberately small and deliberately real: ten field
+        boundaries per grower, one farm per state, and two five-year records that
+        only partially overlap. Weather covers <strong>2021–2025</strong> (five
+        growing seasons); crop history covers <strong>2019–2023</strong> (five CDL
+        years). Their shared window is <strong>2021–2023</strong> (three years), and
+        that is the only period where the weather and rotation analyses can be
+        joined. The analysis is exploratory. It is built to show what a reproducible
+        field-level workflow can support before anyone reaches for a management
+        recommendation.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Sample composition. Area is the recomputed boundary area in EPSG:5070, not the source attribute.</caption>
+          <thead>
+            <tr><th>Grower</th><th>County, state</th><th class="num">Fields</th><th class="num">Total ac</th><th class="num">Mean field ac</th><th class="num">Share of sample area</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="dot" style="background:var(--blue)"></span>IL</td><td>Iroquois, Illinois</td><td class="num">10</td><td class="num">6,444.27</td><td class="num">644.4</td><td class="num">44.3%</td></tr>
+            <tr><td><span class="dot" style="background:var(--orange)"></span>IA</td><td>Kossuth, Iowa</td><td class="num">10</td><td class="num">6,409.23</td><td class="num">640.9</td><td class="num">44.1%</td></tr>
+            <tr><td><span class="dot" style="background:var(--green)"></span>NE</td><td>York, Nebraska</td><td class="num">10</td><td class="num">1,692.82</td><td class="num">169.3</td><td class="num">11.6%</td></tr>
+            <tr><td><strong>Total</strong></td><td>—</td><td class="num"><strong>30</strong></td><td class="num"><strong>14,546.32</strong></td><td class="num">484.9</td><td class="num">100%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="kicker" style="margin-top:-.3rem">Source: <a href="tables/boundary_fields.csv">boundary_fields.csv</a></p>
+
+      <div class="split">
+        <div class="callout">
+          <p class="h">The grain problem</p>
+          <p>
+            Each field is sampled at its own centroid, but NASA POWER snaps those
+            points to 0.5° × 0.625° cells. The ten fields per farm land in just four
+            cells in Illinois, and three each in Iowa and Nebraska, and fields that
+            share a cell get identical values. That is two to four weather series per
+            farm, not ten. Treating 150 field-years as 150 independent climate
+            observations would inflate every weather test, so weather is aggregated to
+            <strong>grower-year</strong> (n = 15), and the season-level comparison
+            uses <strong>n = 5</strong>.
+          </p>
+        </div>
+        <div class="callout warn">
+          <p class="h">The sample problem</p>
+          <p>
+            Three locations cannot separate a regional gradient from a management
+            effect. The Nebraska fields were also drawn from a deliberately narrow
+            size band, so their uniformity is a <strong>sampling choice</strong>, not
+            a fact about York County. Tests are reported with that limitation attached.
+          </p>
+        </div>
+      </div>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>Boundaries:</strong> 30 polygons, recomputed area, perimeter, Polsby–Popper compactness, bbox fill, nearest-neighbour distance, overlap checks.</li>
+        <li><strong>Weather (2021–2025):</strong> daily NASA POWER values, reduced to a May 1 – Sep 30 season for each of the five years. Each field centroid snaps to a 0.5° × 0.625° cell; the ten fields per farm resolve to four cells in IL and three each in IA and NE. GDD uses base 50 °F and an 86 °F cap; precipitation is a sum, not a mean.</li>
+        <li><strong>Units:</strong> U.S. customary presentation — acres, °F, °F·days, inches, miles, and mph. The reusable runner writes these with <code>--units us</code>; calculations and tests use the metric source values, and the conversions are linear rescalings that leave Spearman ρ, Pearson r, p-values, and Cliff's δ unchanged. No yield data exist in this dataset, so no bu/ac figures are reported.</li>
+        <li><strong>Crop history (2019–2023):</strong> USDA CDL primary class at 30 m, with per-field purity so edge pixels are visible rather than hidden.</li>
+        <li><strong>Overlap (2021–2023):</strong> the three years when weather and CDL both exist. The rotation section therefore describes four CDL transitions, not five; any joint weather–rotation comparison is limited to this shared window.</li>
+      </ul>
+
+      <div class="pill-row">
+        <span class="pill">EPSG:5070 equal-area geometry</span>
+        <span class="pill">May 1 – Sep 30 season</span>
+        <span class="pill">GDD base 50 °F / cap 86 °F</span>
+        <span class="pill">CDL primary class</span>
+        <span class="pill">Exact permutation at small n</span>
+        <span class="pill">Wilson 95% intervals</span>
+      </div>
+    </section>
+
+    <!-- ================= 02 BOUNDARIES ================= -->
+    <section id="boundaries">
+      <div class="sec-head"><span class="no">02</span><h2>Field boundaries: two large-parcel farms and one uniform small-parcel sample</h2></div>
+
+      <p>
+        The first comparison is the least ambiguous: no statistically detectable
+        difference in field size was found between IL and IA in this sample
+        (Holm <em>p</em> = 0.97), while NE sits far below both. Absence of a
+        detectable difference at 10 fields per farm is <em>not</em> evidence that the
+        two populations have equal field sizes. The NE gap is a real difference in
+        this sample, but it is <em>not</em> evidence that York County farms are
+        uniformly 170 ac — the NE draw was constrained to a narrow band.
+      </p>
+
+      <div class="cards">
+        <div class="card"><span class="v">19.3%</span><span class="l">IL field-size CV</span><span class="s">540.7–956.9 ac</span></div>
+        <div class="card"><span class="v">15.2%</span><span class="l">IA field-size CV</span><span class="s">554.3–873.0 ac</span></div>
+        <div class="card"><span class="v">1.2%</span><span class="l">NE field-size CV</span><span class="s">166.1–171.3 ac — sampling band</span></div>
+        <div class="card"><span class="v">p = 6.3×10⁻⁵</span><span class="l">Kruskal–Wallis across growers</span><span class="s">H = 19.36, 2 df</span></div>
+      </div>
+
+      <figure id="fig-b1">
+        <img src="figures/fig_boundary_size_by_grower.png" width="1600" height="787" loading="lazy"
+             alt="Strip and box plot of field area for IL, IA, and NE. IL and IA overlap between about 554 and 873 acres with wide spread; NE is a tight band near 170 acres.">
+        <figcaption>
+          <span class="tag">Figure B1</span><b>Field size by grower.</b>
+          Dots are the 30 fields; the box is the interquartile range; the notch-free
+          median line is annotated with a 10,000-resample bootstrap 95% CI.
+          IL and IA medians are 605.8 and 599.9 ac; NE is 169.9 ac. Pairwise
+          Mann–Whitney with Holm correction: IL vs IA <em>p</em> = 0.970; NE vs each
+          of IL and IA <em>p</em> = 0.00055, Cliff's δ = 1.0 (complete separation).
+          The IL–IA result means no difference was detected at this sample size; it
+          is not evidence that the two farms have equal size distributions.
+          Data: <a href="tables/boundary_size_stats.csv">size stats</a>,
+          <a href="tables/boundary_size_test.csv">tests</a>.
+        </figcaption>
+      </figure>
+
+      <h3>Shape and size are not one story</h3>
+      <p>
+        Compactness falls as fields get larger in Iowa (ρ = −0.88, <em>p</em> = 0.0008),
+        but not in Illinois (ρ = −0.16, <em>p</em> = 0.65) or Nebraska
+        (ρ = −0.14, <em>p</em> = 0.70). The pooled correlation (ρ = −0.68,
+        <em>p</em> = 3.4×10⁻⁵) is largely a between-grower composition effect: NE
+        contributes small, compact fields and pulls the pooled line. This is a compact example
+        of why a pooled scatter can mislead when groups have different levels.
+      </p>
+
+      <figure id="fig-b2">
+        <img src="figures/fig_boundary_shape_vs_size.png" width="1537" height="978" loading="lazy"
+             alt="Three panels of field area versus Polsby-Popper compactness. Iowa shows a strong negative relationship; Illinois and Nebraska show almost none; the pooled panel is dominated by the Nebraska cluster.">
+        <figcaption>
+          <span class="tag">Figure B2</span><b>Area vs compactness.</b>
+          Spearman ρ per grower and pooled, with the pooled fit drawn only to show
+          the composition effect. IA: ρ = −0.88, <em>p</em> = 0.0008. IL: −0.16, <em>p</em> = 0.65.
+          NE: −0.14, <em>p</em> = 0.70. Pooled: −0.68, <em>p</em> = 3.4×10⁻⁵.
+          A large field is not inherently irregular; the IA pattern is local to that
+          farm's parcel layout. Data: <a href="tables/boundary_shape_corr.csv">shape correlations</a>.
+        </figcaption>
+      </figure>
+
+      <h3>Geometry hygiene</h3>
+      <ul>
+        <li><strong>Zero overlapping pairs.</strong> One IL pair touches along a shared edge; touching is not overlap and is allowed.</li>
+        <li>Median nearest-neighbour distance: IL 4.15 mi, IA 4.56 mi, NE 5.90 mi. The farms are not contiguous blocks.</li>
+        <li>Polsby–Popper is scale-free but sensitive to slivers and road cuts; treat it as a shape descriptor, not a quality score.</li>
+      </ul>
+      <p class="kicker">Source: <a href="tables/boundary_spatial.csv">boundary_spatial.csv</a> · <a href="tables/boundary_fields.csv">boundary_fields.csv</a></p>
+    </section>
+
+    <!-- ================= 03 WEATHER ================= -->
+    <section id="weather">
+      <div class="sec-head"><span class="no">03</span><h2>Growing seasons: heat is a place signal, rainfall is a year signal</h2></div>
+
+      <p>
+        Across 2021–2025, Nebraska accumulated the most heat and the least rain;
+        Iowa was coolest and wettest; Illinois sat between them. The more useful
+        result is in the variance decomposition: <strong>75% of GDD variance is
+        between growers</strong> but only 6% is between years, while
+        <strong>52% of precipitation variance is between years</strong> and only
+        12% between growers. Heat separates the farms; rain separates the seasons.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Five-season means of the field-level seasonal metrics. Field SD is the spread across the 10 fields inside a farm; it reflects only the two to four NASA POWER cells those fields fall in, not a microclimate signal.</caption>
+          <thead>
+            <tr><th>Grower</th><th class="num">GDD °F·d</th><th class="num">Precip in</th><th class="num">Frost-free d</th><th class="num">Longest dry run d</th><th class="num">Max 30-day precip in</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="dot" style="background:var(--blue)"></span>IL</td><td class="num">3,111.3</td><td class="num">17.7</td><td class="num">192.5</td><td class="num">11.7</td><td class="num">6.5</td></tr>
+            <tr><td><span class="dot" style="background:var(--orange)"></span>IA</td><td class="num">2,926.6</td><td class="num">19.2</td><td class="num">180.5</td><td class="num">13.6</td><td class="num">7.2</td></tr>
+            <tr><td><span class="dot" style="background:var(--green)"></span>NE</td><td class="num">3,348.6</td><td class="num">15.9</td><td class="num">195.8</td><td class="num">14.0</td><td class="num">5.8</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="kicker" style="margin-top:-.3rem">Source: <a href="tables/weather_grower_stats.csv">weather_grower_stats.csv</a></p>
+
+      <figure id="fig-w1">
+        <img src="figures/fig_weather_gdd_accumulation.png" width="1600" height="514" loading="lazy"
+             alt="Five panels, one per year, showing cumulative GDD curves for Illinois, Iowa, and Nebraska. Nebraska is highest in every year; Iowa is lowest in most years; the curves converge near the start of the season.">
+        <figcaption>
+          <span class="tag">Figure W1</span><b>Cumulative growing-season GDD.</b>
+          Lines are farm means over 10 fields; bands are the field min–max, which is
+          narrow because fields in the same NASA POWER cell share identical values.
+          End labels are the
+          grower-year seasonal totals — e.g. NE reached 3,500 °F·d in 2023, while IA
+          reached 2,781 °F·d in 2024. Data: <a href="tables/weather_year_summary.csv">year summary</a>,
+          <a href="tables/weather_seasonal_metrics.csv">field-year metrics</a>.
+        </figcaption>
+      </figure>
+
+      <figure id="fig-w2">
+        <img src="figures/fig_weather_seasonal_precip.png" width="1600" height="617" loading="lazy"
+             alt="Precipitation panels by year showing Iowa generally wettest and Nebraska driest, with large year-to-year swings in Iowa.">
+        <figcaption>
+          <span class="tag">Figure W2</span><b>Seasonal precipitation.</b>
+          Iowa's totals swing from 14.1 inches (2023) to 25.4 inches (2024) — a 27.9%
+          year-to-year CV. Illinois is the most stable at 14.0%. The NE range is
+          12.8–21.7 inches. Low rainfall is not the same as drought stress: there is no
+          irrigation, ET, or soil-water data here. Data:
+          <a href="tables/weather_year_variability.csv">year variability</a>,
+          <a href="tables/weather_variance_components.csv">variance components</a>.
+        </figcaption>
+      </figure>
+
+      <div class="callout warn">
+        <p class="h">Do not read the field-level p-values as farm-level evidence</p>
+        <p>
+          The Kruskal–Wallis tests on these tables use 10 fields per farm, but those
+          fields resolve to only two to four NASA POWER cells (IL 4, IA 3, NE 3).
+          The p-values describe how cleanly the farm samples separate, not how
+          confidently three locations differ. The
+          honest statement is descriptive: in these five seasons, NE was hotter
+          than both other farms in every year and drier than IA in every year; its
+          rainfall ranking against IL flips in 2025.
+        </p>
+      </div>
+
+      <p>
+        Pairwise Mann–Whitney tests with Holm correction separate the farms on
+        nearly every weather metric: most contrasts sit at <em>p</em> = 3.7×10⁻⁴
+        or smaller with |Cliff's δ| = 1.0. The one weaker contrast is IA vs NE
+        longest dry run (Holm <em>p</em> = 0.0056, δ = −0.70). The effects are large
+        in this sample; the inference is still limited by three locations.
+        The variance decomposition is the more defensible summary.
+      </p>
+      <p class="kicker">Source: <a href="tables/weather_grower_tests.csv">weather_grower_tests.csv</a> · <a href="tables/weather_variance_components.csv">weather_variance_components.csv</a></p>
+    </section>
+
+    <!-- ================= 04 COUPLING ================= -->
+    <section id="coupling">
+      <div class="sec-head"><span class="no">04</span><h2>Do hotter seasons also arrive drier? A five-season, three-farm test</h2></div>
+
+      <p>
+        This analysis was added after the initial EDA, once the seasonal weather
+        tables had been examined; it is <strong>post hoc and exploratory</strong>,
+        not a pre-specified confirmatory test. The question is tempting to answer
+        with a scatter of all 150 field-years, which would produce a tight cloud and
+        a spuriously tiny p-value. That design is wrong: the 10 fields in a farm
+        collapse to two to four distinct weather cells. The analysis below
+        aggregates first, then compares seasons.
+      </p>
+
+      <div class="callout warn">
+        <p class="h">Post hoc, exploratory, and reported as such</p>
+        <p>
+          The GDD–precipitation question, the season index, and the exact test were
+          chosen after looking at the initial EDA. The statistics below are reported
+          exactly as computed — no result is changed or hidden — but their p-values
+          describe this data-chosen design on these five seasons. They are not
+          confirmatory, and a confirmatory test would need an independent weather
+          record and a design fixed before looking at it.
+        </p>
+      </div>
+
+      <h3>Design chosen</h3>
+      <ul>
+        <li><strong>Unit:</strong> grower-year mean over the 10 fields (15 rows).</li>
+        <li><strong>Index test:</strong> the regional season index — mean GDD and mean precipitation across the three farms within each year — with <strong>n = 5</strong> seasons.</li>
+        <li><strong>Small-n correction:</strong> exact two-sided Spearman permutation over all 5! = 120 rank orders. At n = 5 the asymptotic p for ρ = −0.90 is 0.037, but the exact value is 0.083. The asymptotic approximation is anti-conservative here, so it is not used.</li>
+        <li><strong>Per-farm tests:</strong> the same exact Spearman test on each grower's five seasons, reported as a consistency check, not as three independent replications.</li>
+        <li><strong>Pooled descriptives:</strong> grower-demeaned anomalies with Pearson r and a within-grower year-shuffle permutation (10,000 draws, seed 20261120). This preserves each farm's mean but cannot remove the shared-season dependence, so its p is labelled optimistic.</li>
+        <li><strong>Fragility check:</strong> leave-one-season-out Spearman ρ for the index and each farm.</li>
+      </ul>
+
+      <figure id="fig-w3">
+        <img src="figures/fig_weather_gdd_precip_coupling.png" width="1600" height="929" loading="lazy"
+             alt="Four panels. Illinois shows a weak positive relationship; Iowa and Nebraska each show a strong negative relationship across five labelled years. The pooled anomaly panel shows a downward line with r = -0.73.">
+        <figcaption>
+          <span class="tag">Figure W3</span><b>GDD vs seasonal precipitation at the grower-year grain.</b>
+          Each point is one grower-year mean over 10 fields, labelled by year and
+          connected in year order. The fields map to only two to four NASA POWER
+          cells, so the points are not independent climate observations. This
+          analysis is post hoc exploratory. Farm panels use independent axis ranges —
+          compare direction, not slope. The pooled panel is grower-demeaned and
+          descriptive. Data: <a href="tables/weather_grower_year.csv">grower-year values</a>,
+          <a href="tables/weather_gdd_precip_corr.csv">correlations</a>,
+          <a href="tables/weather_gdd_precip_sensitivity.csv">sensitivity</a>.
+        </figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Coupling statistics. The exact p is the two-sided permutation p over rank orders. The slope is descriptive inches of precipitation per 100 °F·d of GDD.</caption>
+          <thead>
+            <tr><th>Scope</th><th>Unit</th><th class="num">n</th><th class="num">Spearman ρ</th><th class="num">p</th><th>Method</th><th class="num">Slope</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Season index</strong></td><td>season</td><td class="num">5</td><td class="num">−1.00</td><td class="num"><strong>0.0167</strong></td><td>exact permutation</td><td class="num">−5.24</td></tr>
+            <tr><td>IL</td><td>grower-year</td><td class="num">5</td><td class="num">+0.40</td><td class="num">0.517</td><td>exact permutation</td><td class="num">+1.21</td></tr>
+            <tr><td>IA</td><td>grower-year</td><td class="num">5</td><td class="num">−0.90</td><td class="num">0.083</td><td>exact permutation</td><td class="num">−3.83</td></tr>
+            <tr><td>NE</td><td>grower-year</td><td class="num">5</td><td class="num">−0.90</td><td class="num">0.083</td><td>exact permutation</td><td class="num">−2.47</td></tr>
+            <tr><td>Grower means</td><td>location</td><td class="num">3</td><td class="num">−1.00</td><td class="num">—</td><td>descriptive only</td><td class="num">−0.78</td></tr>
+            <tr><td>Pooled anomalies</td><td>grower-year</td><td class="num">15</td><td class="num">−0.71</td><td class="num">0.017*</td><td>cluster permutation (Pearson r = −0.73)</td><td class="num">−2.92</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="kicker" style="margin-top:-.3rem">*Descriptive: shared seasons make this p optimistic. Full precision in <a href="tables/weather_gdd_precip_corr.csv">weather_gdd_precip_corr.csv</a>.</p>
+
+      <h3>What the seasons show</h3>
+      <p>
+        The regional season index is perfectly inverse: the hottest season is the
+        driest and the coolest is the wettest (ρ = −1.00, exact <em>p</em> = 0.0167).
+        That is the smallest attainable two-sided exact p at n = 5 — a perfect rank
+        reversal cannot produce a smaller one. It is a real feature of these five
+        seasons and a fragile basis for a rule.
+      </p>
+      <p>
+        Iowa and Nebraska both show the same negative direction (ρ = −0.90 each,
+        exact <em>p</em> = 0.083). Illinois does not (ρ = +0.40, <em>p</em> = 0.52),
+        and its sign flips depending on which year is dropped. Leave-one-out keeps
+        the index at −1.00 for every dropped season and keeps IA between −1.00 and
+        −0.80 and NE between −1.00 and −0.80, but moves IL from −0.20 to +1.00.
+        The IL result is the unstable one, not the negative signal.
+      </p>
+
+      <div class="split">
+        <div class="callout yes">
+          <p class="h">What this supports</p>
+          <ul>
+            <li>A description of the 2021–2025 seasons: hot summers in IA and NE coincided with low seasonal rainfall.</li>
+            <li>A reproducible, explicitly stated comparison at the season level, with an exact small-n p and a leave-one-out fragility check. The hypotheses were chosen post hoc, so the p-values are exploratory, not confirmatory.</li>
+            <li>A demonstration that the field-level design would have overstated precision, and a corrected alternative.</li>
+            <li>A hypothesis worth testing on a longer record: summer heat and rainfall may be coupled in these two states but not in Illinois.</li>
+          </ul>
+        </div>
+        <div class="callout no">
+          <p class="h">What it does not support</p>
+          <ul>
+            <li><strong>Not a causal claim.</strong> Heat does not "cause" low rainfall in this analysis; both are seasonal aggregates driven by circulation we did not measure.</li>
+            <li><strong>Not a climate trend.</strong> Five seasons cannot establish a normal, a shift, or a return period.</li>
+            <li><strong>Not a between-farm trade-off.</strong> The three grower means are perfectly rank-confounded with geography (n = 3) and are not tested.</li>
+            <li><strong>Not a yield or drought statement.</strong> No irrigation, ET, soil water, or crop outcome is in the model.</li>
+            <li><strong>Not independent replication.</strong> The pooled cluster p is descriptive because all three farms experience the same years.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Recommended visualization and comparison</h3>
+      <p>
+        The recommended display is exactly Figure W3: a 2×2 panel with one farm per
+        panel (five labelled grower-years, path in year order, exact ρ and p) and a
+        fourth panel of grower-demeaned anomalies for the pooled descriptive view.
+        The recommended comparison is a two-tier test — the season index as the
+        primary comparison within this design, per-farm exact tests as a
+        consistency check, and the pooled cluster permutation explicitly demoted
+        to description. Alternatives
+        considered and rejected: a 150-point field-level scatter (pseudo-replication),
+        a regression through three farm means (n = 3, rank-confounded), and a mixed
+        model with farm random effects (not identifiable with three farms and five
+        years).
+      </p>
+
+      <div class="callout">
+        <p class="h">Proposed subskill improvements</p>
+        <ul>
+          <li><strong>Longer baseline.</strong> Add an option to compare the five seasons with 1991–2020 normals and to stream a longer NASA POWER/PRISM history, so the analysis can distinguish a wet/dry phase from a trend.</li>
+          <li><strong>Water balance, not rainfall.</strong> Add reference ET (FAO-56 or Hargreaves) and SSURGO available water capacity, then report a climatic water deficit. Precipitation alone conflates timing with supply.</li>
+          <li><strong>Grid realism.</strong> The pipeline already resolves each field to its NASA POWER cell; add a cell-area-weighted farm value and report the between-cell spread, so a farm spanning four cells is not summarised as one number.</li>
+          <li><strong>Effect-size uncertainty.</strong> Emit a block-bootstrap CI for the coupling slope (resampling seasons, not fields) so the figure can show an interval rather than a point.</li>
+          <li><strong>Power note.</strong> Print the minimum detectable |ρ| at the current n beside the test, so users see that n = 5 only detects a near-perfect rank reversal.</li>
+          <li><strong>Wording guardrails.</strong> Keep an auto-generated "association, not causation" line in the manifest methods block and in every coupling figure footer.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= 05 HISTORY ================= -->
+    <section id="history">
+      <div class="sec-head"><span class="no">05</span><h2>Crop history: corn–soy alternation in IL and IA, corn dominance in NE</h2></div>
+
+      <p>
+        The CDL sequence is the clearest behavioural difference in the dataset.
+        Nine of ten IL fields and nine of ten IA fields follow a strict corn–soy
+        alternation across 2019–2023. Nebraska is the opposite: four of ten fields
+        are corn in all five years, and nine of ten contain at least one corn→corn
+        transition.
+      </p>
+
+      <figure id="fig-c1">
+        <img src="figures/fig_cdl_crop_sequence_grid.png" width="1600" height="1475" loading="lazy"
+             alt="Grid of 30 field sequences from 2019 to 2023, colour-coded by crop. Illinois and Iowa mostly alternate orange corn and blue soybeans; Nebraska is mostly orange with occasional soybean years.">
+        <figcaption>
+          <span class="tag">Figure C1</span><b>Crop sequence by field.</b>
+          Rows are fields grouped by grower; columns are CDL years. The starred
+          "next" column is the rotation table's heuristic outlook, not an
+          observation. Minority CDL classes are suppressed to the primary class.
+          Data: <a href="tables/cdl_primary_crop.csv">primary crop</a>,
+          <a href="tables/cdl_rotation_patterns.csv">rotation patterns</a>.
+        </figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Rotation summary. "Corn field-years" counts field-years classified corn, not area.</caption>
+          <thead>
+            <tr><th>Grower</th><th class="num">Fields with ≥1 corn→corn</th><th class="num">Continuous corn (5/5)</th><th class="num">Corn field-years</th><th>Pattern read</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="dot" style="background:var(--blue)"></span>IL</td><td class="num">1 / 10</td><td class="num">1 (<code>il-r3</code>)</td><td class="num">30 / 50 (60%)</td><td>Nine fields alternate; one continuous-corn field</td></tr>
+            <tr><td><span class="dot" style="background:var(--orange)"></span>IA</td><td class="num">1 / 10</td><td class="num">0</td><td class="num">23 / 50 (46%)</td><td>Nine fields alternate; <code>ia-r4</code> has one corn→corn pair</td></tr>
+            <tr><td><span class="dot" style="background:var(--green)"></span>NE</td><td class="num"><strong>9 / 10</strong></td><td class="num"><strong>4</strong></td><td class="num"><strong>42 / 50 (84%)</strong></td><td>Corn-dominated; one field (<code>ne-r8</code>) strictly alternates</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="kicker" style="margin-top:-.3rem">Source: <a href="tables/cdl_field_rotation_flags.csv">rotation flags</a> · <a href="tables/cdl_rotation_patterns.csv">rotation patterns</a></p>
+
+      <figure id="fig-c2">
+        <img src="figures/fig_cdl_area_weighted_crop_mix.png" width="1600" height="636" loading="lazy"
+             alt="Stacked bars of area-weighted crop share by year for each grower. Illinois and Iowa alternate roughly 80/20 between corn and soybeans; Nebraska stays near 78 to 89 percent corn.">
+        <figcaption>
+          <span class="tag">Figure C2</span><b>Area-weighted crop mix.</b>
+          Crop area is field area × CDL class share, so this is boundary area, not
+          planted area. NE stays between 77.7% and 88.6% corn; IL and IA alternate
+          near 80/20. Edge pixels inflate "Other" in small fields, which is why mean
+          purity is reported. Data: <a href="tables/cdl_area_mix.csv">area mix</a>,
+          <a href="tables/cdl_purity_diagnostics.csv">purity</a>.
+        </figcaption>
+      </figure>
+
+      <p>
+        CDL purity averages 97.7% and never falls below 94.9%, so the primary-class
+        read is not being driven by mixed pixels; there is no meaningful
+        area–purity relationship (pooled ρ = 0.32, <em>p</em> = 0.084). The
+        field-level rotation flag is strongly associated with grower
+        (χ² = 18.37, <em>p</em> = 1.0×10⁻⁴, Cramér's V = 0.78). Fisher exact tests
+        on the field-level counts: NE vs IL and NE vs IA both Holm
+        <em>p</em> = 0.0033; IL vs IA is <em>p</em> = 1.0 (identical counts, 1/10 each).
+      </p>
+    </section>
+
+    <!-- ================= 06 CORN AFTER CORN ================= -->
+    <section id="corncorn">
+      <div class="sec-head"><span class="no">06</span><h2>Corn after corn: Nebraska is steady, not concentrated in one transition</h2></div>
+
+      <p>
+        The second new analysis asks a narrower question than the field-level flag:
+        in each of the four consecutive-year transitions, how many fields that were
+        corn stayed corn? Restricting the denominator to fields that were corn in
+        the from-year is what makes the rates comparable across years.
+      </p>
+
+      <figure id="fig-c3">
+        <img src="figures/fig_cdl_corn_after_corn_by_year.png" width="1600" height="684" loading="lazy"
+             alt="Left panel: corn-to-corn proportion by transition year with Wilson intervals, showing Nebraska near 75 to 89 percent and Illinois and Iowa near zero. Right panel: observed versus expected adjacency from a within-field year shuffle.">
+        <figcaption>
+          <span class="tag">Figure C3</span><b>Corn→corn by transition, and adjacency versus chance.</b>
+          Left: rate per transition with Wilson 95% CI and n/N labels; the legend
+          gives the pooled rate. Right: observed adjacency against a within-field
+          year-shuffle null that preserves each field's corn-year count. NE sits at
+          its null (p = 0.71); IL and IA are more alternating than chance. Data:
+          <a href="tables/cdl_corn_after_corn_by_transition.csv">by transition</a>,
+          <a href="tables/cdl_corn_after_corn_persistence.csv">persistence</a>.
+        </figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Corn→corn by transition year. Denominator = fields with corn in the from-year. Intervals are Wilson 95%.</caption>
+          <thead>
+            <tr><th>Grower</th><th>Transition</th><th class="num">Corn→corn</th><th class="num">Eligible</th><th class="num">Rate</th><th class="num">95% CI</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="4"><span class="dot" style="background:var(--blue)"></span>IL</td><td>2019→2020</td><td class="num">1</td><td class="num">8</td><td class="num">12.5%</td><td class="num">2.2–47.1%</td></tr>
+            <tr><td>2020→2021</td><td class="num">1</td><td class="num">3</td><td class="num">33.3%</td><td class="num">6.1–79.2%</td></tr>
+            <tr><td>2021→2022</td><td class="num">1</td><td class="num">8</td><td class="num">12.5%</td><td class="num">2.2–47.1%</td></tr>
+            <tr><td>2022→2023</td><td class="num">1</td><td class="num">3</td><td class="num">33.3%</td><td class="num">6.1–79.2%</td></tr>
+            <tr><td rowspan="4"><span class="dot" style="background:var(--orange)"></span>IA</td><td>2019→2020</td><td class="num">0</td><td class="num">2</td><td class="num">0.0%</td><td class="num">0.0–65.8%</td></tr>
+            <tr><td>2020→2021</td><td class="num">1</td><td class="num">8</td><td class="num">12.5%</td><td class="num">2.2–47.1%</td></tr>
+            <tr><td>2021→2022</td><td class="num">0</td><td class="num">3</td><td class="num">0.0%</td><td class="num">0.0–56.1%</td></tr>
+            <tr><td>2022→2023</td><td class="num">0</td><td class="num">7</td><td class="num">0.0%</td><td class="num">0.0–35.4%</td></tr>
+            <tr><td rowspan="4"><span class="dot" style="background:var(--green)"></span>NE</td><td>2019→2020</td><td class="num">8</td><td class="num">9</td><td class="num"><strong>88.9%</strong></td><td class="num">56.5–98.0%</td></tr>
+            <tr><td>2020→2021</td><td class="num">7</td><td class="num">9</td><td class="num"><strong>77.8%</strong></td><td class="num">45.3–93.7%</td></tr>
+            <tr><td>2021→2022</td><td class="num">6</td><td class="num">8</td><td class="num"><strong>75.0%</strong></td><td class="num">40.9–92.9%</td></tr>
+            <tr><td>2022→2023</td><td class="num">6</td><td class="num">8</td><td class="num"><strong>75.0%</strong></td><td class="num">40.9–92.9%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The answer: consistent, not concentrated</h3>
+      <p>
+        Nebraska's four rates sit between 75.0% and 88.9% and contribute 22–30% of
+        the farm's 27 corn→corn events. There is no single transition carrying the
+        result — no "2021 was the bad year" story. The Wilson intervals all overlap,
+        so the correct reading is "no visible concentration", not "a constant rate
+        of exactly 79%". IL and IA are the concentrated cases: every IL event comes
+        from <code>il-r3</code> (the only continuous-corn field) and the single IA
+        event comes from <code>ia-r4</code>.
+      </p>
+
+      <p>
+        The persistence test separates frequency from adjacency. If each field's
+        number of corn years is fixed and the years are shuffled inside that field,
+        NE's expected adjacency is 28.0 and the observed count is 27 — exactly what
+        chance would produce (<em>p</em> = 0.71). IL and IA are the opposite: 4
+        observed vs 13.2 expected (<em>p</em> = 0.0002) and 1 vs 6.4
+        (<em>p</em> = 0.0012), i.e. more alternating than their corn frequency alone
+        would predict. In other words, NE's corn-on-corn is a <strong>high corn
+        frequency</strong> phenomenon, not evidence of longer runs than that
+        frequency implies.
+      </p>
+
+      <div class="callout warn">
+        <p class="h">Implication for the five-year rotation history</p>
+        <p>
+          The field-level finding — 9 of 10 NE fields with at least one corn→corn
+          transition, versus 1 of 10 in IL and IA — is not an artifact of one
+          transition year. It is stable across all four. But a five-year CDL window
+          cannot tell a permanent continuous-corn system from a transient run, and
+          it cannot say why. Irrigation, feed demand, seed economics, and risk
+          preference are all plausible and all unmeasured. The right conclusion is
+          a robust description of <em>this</em> five-year history plus a longer-record
+          test, not a claim about NE farming as a whole.
+        </p>
+      </div>
+
+      <h3>Recommended visualization and comparison</h3>
+      <p>
+        The recommended display is Figure C3: a transition dot plot with Wilson
+        intervals and n/N labels, paired with an observed-versus-null panel. The
+        recommended comparison is the per-transition rate plus the within-field
+        year-shuffle persistence test. A chi-square across the four transition-years
+        is deliberately <em>not</em> used: NE's 34 transition rows come from 10
+        fields and are serially dependent, so that test would overstate the evidence.
+        Pooling within grower and reporting the field-level Fisher result keeps the
+        inferential unit at the field.
+      </p>
+
+      <div class="callout">
+        <p class="h">Proposed subskill improvements</p>
+        <ul>
+          <li><strong>Longer CDL window.</strong> CDL is available well before 2019; a 10–15 year window would separate continuous corn from a five-year run and let the persistence null see more arrangements.</li>
+          <li><strong>Run-length metrics.</strong> Add maximum consecutive corn years and a run-length distribution, not just adjacent-pair counts.</li>
+          <li><strong>Field-level random effects.</strong> Replace the marginal shuffle with a conditional (field-stratified) test or a GEE, so the dependence is modelled rather than only permuted.</li>
+          <li><strong>Exact enumeration.</strong> At five years, each field has at most 32 year orders; enumerate exactly instead of Monte Carlo sampling, removing seed dependence.</li>
+          <li><strong>Management join.</strong> Add yield, irrigation, and input records where available. Corn-after-corn is an agronomic and economic question, not only a classification question.</li>
+          <li><strong>Transition heatmap option.</strong> Emit the grower × transition × rate matrix as a heatmap for multi-grower runs where the dot plot becomes crowded.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= 07 MAP ================= -->
+    <section id="map">
+      <div class="sec-head"><span class="no">07</span><h2>Geography: three counties, three different field systems</h2></div>
+
+      <figure id="fig-map">
+        <img src="figures/fig_map_three_growers.png" width="1600" height="980" loading="lazy"
+             alt="Map with a CONUS locator and three projected detail panels showing field boundaries in Iroquois Illinois, Kossuth Iowa, and York Nebraska, each with a scale bar.">
+        <figcaption>
+          <span class="tag">Figure M1</span><b>Grower locations and field layout.</b>
+          Equal-area projection (EPSG:5070), one panel per farm, CONUS locator
+          above. The panels use a common 18.6 mi half-extent, so the NE fields look
+          small because they are small. Data:
+          <a href="tables/map_field_index.csv">map field index</a>,
+          <a href="tables/boundary_fields.csv">boundary fields</a>.
+        </figcaption>
+      </figure>
+      <p>
+        The map is a locator, not an analytical result. It confirms the three
+        counties and makes the parcel geometry legible: IL and IA fields are large
+        and irregular, NE fields are small and compact. The visual difference is the
+        same one measured in Section 02, and it carries the same sampling caveat.
+      </p>
+    </section>
+
+    <!-- ================= 08 LIMITS ================= -->
+    <section id="limits">
+      <div class="sec-head"><span class="no">08</span><h2>Interpretation and limits: observed, plausible, and unsupported</h2></div>
+
+      <p>
+        The report deliberately keeps three kinds of statement apart. An
+        <strong>observed</strong> statement restates a number in a table. A
+        <strong>plausible</strong> statement offers a mechanism that the data cannot
+        test. An <strong>unsupported</strong> statement is the one a reader might
+        want but the design cannot deliver. The table below is the short version.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Separating description from explanation. None of the mechanisms in the middle column is measured here.</caption>
+          <thead>
+            <tr><th>Observed in these data</th><th>Plausible explanation (untested)</th><th>What cannot be established</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>NE fields are small and uniform; IL/IA fields are larger and more variable.</td>
+              <td>Different parcel history, inheritance, and equipment scale; the NE draw used a deliberately narrow size band.</td>
+              <td>That York County parcels are uniformly small, or that size causes any management difference.</td>
+            </tr>
+            <tr>
+              <td>IA shows a strong area–compactness trade-off; IL and NE do not.</td>
+              <td>IA parcel consolidation along roads or drainage; local survey patterns.</td>
+              <td>That large fields are inherently irregular, or that the IA pattern generalises beyond these 10 fields.</td>
+            </tr>
+            <tr>
+              <td>Hot seasons and low rainfall coincide in IA and NE, not IL.</td>
+              <td>Large-scale circulation patterns that produce hot, dry summers in the western Corn Belt.</td>
+              <td>That heat causes drought, that the pattern is a climate trend, or that it will repeat.</td>
+            </tr>
+            <tr>
+              <td>NE has 9/10 fields with corn→corn and 84% corn field-years.</td>
+              <td>Irrigation, feed demand, continuous-corn economics, or risk preference.</td>
+              <td>Why the pattern exists, whether it is profitable, or whether it predates 2019.</td>
+            </tr>
+            <tr>
+              <td>NE corn→corn is steady across all four transitions and at chance adjacency.</td>
+              <td>A stable high-corn rotation rather than a single event.</td>
+              <td>That it is a permanent system; five CDL years cannot separate a stable rotation from a transient run.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Hard limits</h3>
+      <ul>
+        <li><strong>Five weather seasons (2021–2025).</strong> The smallest attainable two-sided exact p at n = 5 is 0.0167, and a rank correlation of ±1.0 is required to reach it.</li>
+        <li><strong>Five CDL years (2019–2023).</strong> Four transitions per field. Serial dependence within a field means transition rows are not independent trials.</li>
+        <li><strong>Three sampled locations.</strong> Between-grower correlation is a three-point description, perfectly rank-confounded with geography.</li>
+        <li><strong>Two to four weather cells per farm.</strong> NASA POWER nodes are 0.5° × 0.625°; the ten fields per farm yield four distinct series in IL and three each in IA and NE. Within-farm spread is between those cells, not microclimate, and the cells are not independent climate observations.</li>
+        <li><strong>CDL is a 30 m annual primary class.</strong> Double crops, cover crops, and silage are not resolved; mean purity is 97.7% but edge pixels remain.</li>
+        <li><strong>No outcomes.</strong> No yield, irrigation, soil water, management, cost, or price data. No recommendation should be read out of this report.</li>
+      </ul>
+
+      <div class="callout warn">
+        <p class="h">The one-sentence version</p>
+        <p>
+          In this 30-field, three-grower, five-season sample, field geometry and
+          corn frequency separate the farms sharply; heat and rainfall move together
+          in IA and NE but not IL; and none of that identifies a cause or a
+          management action.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= 09 INDEX ================= -->
+    <section id="index">
+      <div class="sec-head"><span class="no">09</span><h2>Analysis index: nine figures, 26 tables, one manifest</h2></div>
+
+      <p>
+        Everything displayed on this page is reproducible from the runner and the
+        runtime inputs. The five tables marked <span class="new">new</span> and the
+        two new figures are the additions from this iteration. A later presentation
+        pass changed only units: all 26 tables and nine figures were regenerated
+        from the same metric calculations with <code>--units us</code>, and every
+        statistical column (ρ, r, p, test statistics, counts, shares) is unchanged.
+        The manifest records input hashes, parameters, row counts, grid-cell counts,
+        unit conversion factors, package versions, and the methods block.
+      </p>
+
+      <div class="cards">
+        <div class="card"><span class="v">9</span><span class="l">figures</span><span class="s">7 existing + 2 new</span></div>
+        <div class="card"><span class="v">26</span><span class="l">derived tables</span><span class="s">21 existing + 5 new</span></div>
+        <div class="card"><span class="v">10,000</span><span class="l">permutation draws</span><span class="s">seed 20261120</span></div>
+        <div class="card"><span class="v">1</span><span class="l">manifest</span><span class="s"><a href="manifest.json">manifest.json</a></span></div>
+      </div>
+
+      <div class="index-group">
+        <h3>Figures</h3>
+        <ul class="index-list">
+          <li><code>fig_boundary_size_by_grower.png</code><span class="desc">B1 · field size distributions with bootstrap median CI.</span></li>
+          <li><code>fig_boundary_shape_vs_size.png</code><span class="desc">B2 · area vs Polsby–Popper by grower and pooled.</span></li>
+          <li><code>fig_weather_gdd_accumulation.png</code><span class="desc">W1 · cumulative GDD by year and grower.</span></li>
+          <li><code>fig_weather_seasonal_precip.png</code><span class="desc">W2 · seasonal precipitation by year and grower.</span></li>
+          <li><code>fig_weather_gdd_precip_coupling.png</code><span class="desc">W3 · heat–rain coupling at the grower-year grain. <span class="new">new</span></span></li>
+          <li><code>fig_cdl_crop_sequence_grid.png</code><span class="desc">C1 · crop sequence by field, 2019–2023.</span></li>
+          <li><code>fig_cdl_area_weighted_crop_mix.png</code><span class="desc">C2 · area-weighted corn–soy mix.</span></li>
+          <li><code>fig_cdl_corn_after_corn_by_year.png</code><span class="desc">C3 · corn→corn by transition with persistence null. <span class="new">new</span></span></li>
+          <li><code>fig_map_three_growers.png</code><span class="desc">M1 · locator and three projected field panels.</span></li>
+        </ul>
+      </div>
+
+      <div class="index-group">
+        <h3>Boundary and map tables</h3>
+        <ul class="index-list">
+          <li><a href="tables/boundary_fields.csv"><code>boundary_fields.csv</code></a><span class="desc">Per-field geometry, area, perimeter, Polsby–Popper, bbox fill, centroid.</span></li>
+          <li><a href="tables/boundary_size_stats.csv"><code>boundary_size_stats.csv</code></a><span class="desc">Per-grower size summary, bootstrap median CI, CV, Gini.</span></li>
+          <li><a href="tables/boundary_size_test.csv"><code>boundary_size_test.csv</code></a><span class="desc">Kruskal–Wallis and pairwise Mann–Whitney with Holm and Cliff's δ.</span></li>
+          <li><a href="tables/boundary_shape_corr.csv"><code>boundary_shape_corr.csv</code></a><span class="desc">Spearman area vs compactness by grower and pooled.</span></li>
+          <li><a href="tables/boundary_spatial.csv"><code>boundary_spatial.csv</code></a><span class="desc">Nearest-neighbour distances, max pairwise distance, overlap/touching counts.</span></li>
+          <li><a href="tables/map_field_index.csv"><code>map_field_index.csv</code></a><span class="desc">Panel extents and per-field map placement.</span></li>
+        </ul>
+      </div>
+
+      <div class="index-group">
+        <h3>Weather tables</h3>
+        <ul class="index-list">
+          <li><a href="tables/weather_grower_stats.csv"><code>weather_grower_stats.csv</code></a><span class="desc">Five-season mean, SD, min, and max per grower and metric.</span></li>
+          <li><a href="tables/weather_grower_tests.csv"><code>weather_grower_tests.csv</code></a><span class="desc">Kruskal–Wallis and pairwise tests for each weather metric.</span></li>
+          <li><a href="tables/weather_grower_year.csv"><code>weather_grower_year.csv</code></a><span class="desc">Grower-year means, field SD, and anomalies. <span class="new">new</span></span></li>
+          <li><a href="tables/weather_seasonal_metrics.csv"><code>weather_seasonal_metrics.csv</code></a><span class="desc">Field-year seasonal metrics, 150 rows.</span></li>
+          <li><a href="tables/weather_variance_components.csv"><code>weather_variance_components.csv</code></a><span class="desc">Variance shares for grower, field, year, and residual.</span></li>
+          <li><a href="tables/weather_year_summary.csv"><code>weather_year_summary.csv</code></a><span class="desc">Grower-year GDD, precipitation, frost, and dry-run means.</span></li>
+          <li><a href="tables/weather_year_variability.csv"><code>weather_year_variability.csv</code></a><span class="desc">Year-to-year SD and CV per grower and metric.</span></li>
+          <li><a href="tables/weather_gdd_precip_corr.csv"><code>weather_gdd_precip_corr.csv</code></a><span class="desc">Season-index, per-grower, location, and pooled coupling statistics. <span class="new">new</span></span></li>
+          <li><a href="tables/weather_gdd_precip_sensitivity.csv"><code>weather_gdd_precip_sensitivity.csv</code></a><span class="desc">Leave-one-season-out Spearman ρ. <span class="new">new</span></span></li>
+        </ul>
+      </div>
+
+      <div class="index-group">
+        <h3>CDL and rotation tables</h3>
+        <ul class="index-list">
+          <li><a href="tables/cdl_primary_crop.csv"><code>cdl_primary_crop.csv</code></a><span class="desc">Field-year primary class, purity, and class percentages.</span></li>
+          <li><a href="tables/cdl_area_mix.csv"><code>cdl_area_mix.csv</code></a><span class="desc">Area-weighted crop shares by grower-year.</span></li>
+          <li><a href="tables/cdl_transitions.csv"><code>cdl_transitions.csv</code></a><span class="desc">Long table of consecutive-year transitions.</span></li>
+          <li><a href="tables/cdl_transition_matrix.csv"><code>cdl_transition_matrix.csv</code></a><span class="desc">From-crop → to-crop counts and row probabilities.</span></li>
+          <li><a href="tables/cdl_transition_test.csv"><code>cdl_transition_test.csv</code></a><span class="desc">Field-level corn→corn proportions, Wilson CIs, Fisher tests.</span></li>
+          <li><a href="tables/cdl_transition_chisq.csv"><code>cdl_transition_chisq.csv</code></a><span class="desc">Grower × corn→corn field flag, χ² and Cramér's V.</span></li>
+          <li><a href="tables/cdl_field_rotation_flags.csv"><code>cdl_field_rotation_flags.csv</code></a><span class="desc">Per-field corn→corn count and flag.</span></li>
+          <li><a href="tables/cdl_rotation_patterns.csv"><code>cdl_rotation_patterns.csv</code></a><span class="desc">Field sequences, diversity, predicted next crop, confidence.</span></li>
+          <li><a href="tables/cdl_purity_diagnostics.csv"><code>cdl_purity_diagnostics.csv</code></a><span class="desc">Area vs primary-class purity by grower and pooled.</span></li>
+          <li><a href="tables/cdl_corn_after_corn_by_transition.csv"><code>cdl_corn_after_corn_by_transition.csv</code></a><span class="desc">Corn→corn rate per transition with Wilson CIs. <span class="new">new</span></span></li>
+          <li><a href="tables/cdl_corn_after_corn_persistence.csv"><code>cdl_corn_after_corn_persistence.csv</code></a><span class="desc">Observed adjacency vs within-field year-shuffle null. <span class="new">new</span></span></li>
+        </ul>
+      </div>
+
+      <h3>Reproducibility</h3>
+      <p>
+        The runner is <code>my-farm-advisor/data-pipeline/src/scripts/eda/eda_multifarm.py</code>.
+        The manifest records the input paths and SHA-256 hashes, the season window,
+        GDD parameters, permutation count, seed, unit system and conversion
+        factors, package versions, and the analysis unit for each new test.
+        Re-running with the same seed reproduces the permutation tables exactly.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <caption>Command used for this report. Paths are the runtime paths; the report copies are snapshots.</caption>
+          <thead><tr><th>Step</th><th>Command</th></tr></thead>
+          <tbody>
+            <tr><td>Sync source</td><td><code>DATA_PIPELINE_DATA_ROOT=… ./scripts/install.sh --non-interactive --force-refresh --no-install-deps --persist none</code></td></tr>
+            <tr><td>Run EDA</td><td><code>eda_multifarm.py --farm il-grower/illinois-demo-farm:IL --farm ia-grower/iowa-demo-farm:IA --farm ne-grower/nebraska-demo-farm:NE --out …/eda/assignment-2 --units us --permutations 10000</code></td></tr>
+            <tr><td>Validate</td><td><code>./scripts/validate.sh</code> from the repository root</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      <strong>Assignment #2 · field-level EDA report.</strong>
+      Generated from the My Farm Advisor reusable EDA workflow. All nine figures,
+      26 derived CSVs, and the manifest are local to this folder; no network
+      resources are required to open this page.
+    </p>
+    <p class="small">
+      Scope: 30 fields across Iroquois County, IL; Kossuth County, IA; and York
+      County, NE. Weather 2021–2025 (NASA POWER, 0.5° × 0.625°); crop history 2019–2023
+      (USDA CDL, 30 m). Values are presented in U.S. customary units — acres, °F,
+      °F·days, inches, miles, and mph — converted from the metric source by
+      <code>--units us</code>; correlations and p-values are computed on the metric
+      values and are unchanged. This is an exploratory analysis of associations in a
+      small sample, not a causal or prescriptive study. Figures are static PNGs;
+      tables are plain CSV.
+    </p>
+  </div>
+</footer>
+</body>
+</html>

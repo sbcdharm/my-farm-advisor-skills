@@ -1,0 +1,4 @@
+grower,n_fields,n_years,eligible_transitions,observed_corn_after_corn,observed_rate,null_mean,null_q025,null_q975,p_lower,p_upper,p_two_sided,permutations,seed,note
+IL,10,5,22,4,0.18181818181818182,13.1965,10.0,17.0,9.999000099990002e-05,1.0,0.00019998000199980003,10000,20261120,"Null shuffles year order within each field, preserving each field's corn-year count."
+IA,10,5,20,1,0.05,6.4061,3.0,10.0,0.0005999400059994001,1.0,0.0011998800119988001,10000,20261120,"Null shuffles year order within each field, preserving each field's corn-year count."
+NE,10,5,34,27,0.7941176470588235,28.0095,26.0,31.0,0.35296470352964704,0.8801119888011198,0.7059294070592941,10000,20261120,"Null shuffles year order within each field, preserving each field's corn-year count."

@@ -21,7 +21,8 @@ data. Provenance (URL, row groups touched, accessed_at) is journalled.
 Usage:
   export DATA_PIPELINE_DATA_ROOT=... AG_GROWER_SLUG=... AG_FARM_SLUG=...
   python download_csb_fields.py --bbox S W N E --min-area-ha 40 \
-      --field-prefix ia-r --max-fields 3
+      --field-prefix ia-r --max-fields 3 --state IA --county Kossuth
+  # optional size band (pivot-scale parcels): --min-area-ha 40 --max-area-ha 70
 """
 from __future__ import annotations
 
@@ -35,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from paths import DATA_ROOT  # pyright: ignore[reportMissingImports]
+from us_states import normalize_state_fips  # pyright: ignore[reportMissingImports]
 
 import fsspec  # pyright: ignore[reportMissingImports]
 import geopandas as gpd  # pyright: ignore[reportMissingImports]
@@ -63,12 +65,31 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Real US field boundaries from USDA CSB (FIBOA geoparquet).")
     ap.add_argument("--bbox", type=float, nargs=4, required=True, metavar=("S", "W", "N", "E"))
     ap.add_argument("--min-area-ha", type=float, default=40.0)
+    ap.add_argument(
+        "--max-area-ha",
+        type=float,
+        default=None,
+        help="Optional upper area bound (ha) to select a size band, e.g. pivot-scale fields",
+    )
     ap.add_argument("--max-fields", type=int, default=3)
     ap.add_argument("--field-prefix", required=True)
     ap.add_argument("--country", default="US")
     ap.add_argument("--state", default="")
+    ap.add_argument(
+        "--state-fips",
+        default="",
+        help="Two-digit state FIPS; derived from --state when omitted",
+    )
+    ap.add_argument("--county", default="", help="Optional county name filter (exact, case-insensitive)")
     ap.add_argument("--year", default="")
     args = ap.parse_args(argv)
+
+    state_fips = normalize_state_fips(args.state_fips or args.state)
+    if args.country.upper() == "US" and not state_fips:
+        ap.error(
+            "US boundaries require a resolvable state; pass --state (e.g. Illinois) "
+            "or --state-fips (e.g. 17)"
+        )
 
     grower = os.environ.get("AG_GROWER_SLUG") or sys.exit("AG_GROWER_SLUG required")
     farm = os.environ.get("AG_FARM_SLUG") or sys.exit("AG_FARM_SLUG required")
@@ -112,10 +133,15 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             poly = wkb.loads(geom)
             bb = poly.bounds
-            if bb[2] > xmin and bb[0] < xmax and bb[3] > ymin and bb[1] < ymax:
-                ha = poly.area / 10000.0  # projected CRS is equal-area
-                if ha >= args.min_area_ha:
-                    rows.append((fid, crop, county, ha, poly))
+            if not (bb[2] > xmin and bb[0] < xmax and bb[3] > ymin and bb[1] < ymax):
+                continue
+            if args.county and str(county or "").strip().lower() != args.county.strip().lower():
+                continue
+            ha = poly.area / 10000.0  # projected CRS is equal-area
+            if ha >= args.min_area_ha and (
+                args.max_area_ha is None or ha <= args.max_area_ha
+            ):
+                rows.append((fid, crop, county, ha, poly))
     rows.sort(key=lambda r: (-r[3], str(r[0])))
     rows = rows[: args.max_fields]
     if not rows:
@@ -142,6 +168,8 @@ def main(argv: list[str] | None = None) -> int:
                     "source": "usda_csb_fiboa",
                     "csb_id": str(fid),
                     "county": county,
+                    "state_fips": state_fips or "",
+                    "county_filter": args.county,
                     "geometry": poly,
                 }
             ],
@@ -176,6 +204,15 @@ def main(argv: list[str] | None = None) -> int:
         "row_groups_read": len(sel),
         "total_row_groups": pf.metadata.num_row_groups,
         "min_area_ha": args.min_area_ha,
+        "max_area_ha": args.max_area_ha,
+        "state": args.state,
+        "state_fips": state_fips or "",
+        "county_filter": args.county,
+        "selection": (
+            "largest_within_area_band"
+            if args.max_area_ha is not None
+            else "largest"
+        ),
         "accessed_at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
         "fields": [r["field_id"] for r in inv_rows],
     }

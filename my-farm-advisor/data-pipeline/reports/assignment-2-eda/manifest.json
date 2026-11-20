@@ -1,0 +1,283 @@
+{
+  "run": {
+    "label": "assignment-2",
+    "generated_at": "2026-11-20T04:58:16+00:00",
+    "sections": [
+      "boundaries",
+      "cdl",
+      "map",
+      "weather"
+    ],
+    "farm_specs": [
+      {
+        "grower": "il-grower",
+        "farm": "illinois-demo-farm",
+        "label": "IL"
+      },
+      {
+        "grower": "ia-grower",
+        "farm": "iowa-demo-farm",
+        "label": "IA"
+      },
+      {
+        "grower": "ne-grower",
+        "farm": "nebraska-demo-farm",
+        "label": "NE"
+      }
+    ]
+  },
+  "parameters": {
+    "start_md": 501,
+    "end_md": 930,
+    "gdd_base": 10.0,
+    "gdd_cap": 30.0,
+    "weather_start_year": 2021,
+    "weather_end_year": 2025,
+    "sections": [
+      "boundaries",
+      "weather",
+      "cdl",
+      "map"
+    ],
+    "dpi": 200,
+    "permutations": 10000,
+    "seed": 20261120
+  },
+  "units": {
+    "system": "us",
+    "area": "acres",
+    "distance": "miles",
+    "temperature": "degrees Fahrenheit",
+    "gdd": "degree-days Fahrenheit",
+    "precipitation": "inches",
+    "wind": "miles per hour",
+    "gdd_base_display": 50.0,
+    "gdd_cap_display": 86.0,
+    "conversion_factors": {
+      "ha_to_acres": 2.471053814671653,
+      "km_to_miles": 0.621371192237334,
+      "mm_to_inches": 0.03937007874015748,
+      "ms_to_mph": 2.2369362920544,
+      "c_to_f_scale": 1.8,
+      "c_to_f_offset": 32.0,
+      "mm_per_100gdd_to_in_per_100gdd_f": 0.021872265966754158
+    },
+    "note": "Tests and correlations are computed on metric source values; conversion is applied only when tables and figures are written. Spearman rho, Pearson r, p-values, and Cliff's delta are invariant under these linear rescaling choices.",
+    "source": "metric"
+  },
+  "methods": {
+    "weather_coupling": {
+      "unit": "grower-year mean of the 10 field values; the 10 fields map to 2-4 NASA POWER cells, so field rows are pseudo-replicates",
+      "design": "post hoc exploratory; added after the initial EDA, so p-values are not confirmatory",
+      "within_grower_test": "exact two-sided Spearman permutation for n <= 8; asymptotic otherwise",
+      "pooled_test": "Pearson r on grower-demeaned values with year-shuffle permutation within grower",
+      "permutations": 10000,
+      "seed": 20261120,
+      "caveat": "seasons are shared across farms, so the pooled p-value is optimistic"
+    },
+    "rotation_trends": {
+      "unit": "field",
+      "transition_denominator": "fields with corn in the from-year",
+      "interval": "Wilson 95%",
+      "persistence_null": "within-field year shuffle preserving each field's corn-year count",
+      "permutations": 10000,
+      "seed": 20261120
+    }
+  },
+  "row_counts": {
+    "fields": 30,
+    "weather_rows": 54780,
+    "cdl_rows": 531,
+    "weather_fields": 30
+  },
+  "weather_grid": {
+    "note": "NASA POWER MERRA-2 nodes are 0.5 degrees latitude x 0.625 degrees longitude; fields that snap to the same node receive identical daily values",
+    "by_grower": {
+      "IL": {
+        "field_centroids": 10,
+        "power_cells": 4
+      },
+      "IA": {
+        "field_centroids": 10,
+        "power_cells": 3
+      },
+      "NE": {
+        "field_centroids": 10,
+        "power_cells": 3
+      }
+    }
+  },
+  "inputs": [
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/boundary/field_boundaries.geojson",
+      "bytes": 53544,
+      "sha256": "fc32a67e1a34ea9637e9cf8375f3a470783fc301462173171b5bfeb9cf340a15"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_2019_cdl.csv",
+      "bytes": 1303,
+      "sha256": "7652ba37acbbf5ed62109fd8332b63ab92751d3340b9f2fd8dcf16a853f0ba4b"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_2020_cdl.csv",
+      "bytes": 1251,
+      "sha256": "77ea096c0260d96dffdaf2619caa3686e3f4dd31d065de39b3b68fa05e95063a"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_2021_cdl.csv",
+      "bytes": 1260,
+      "sha256": "995640dff7c664da7f8bebaf8f0086e11d53127faa7bc0717b86cc81d08c8216"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_2022_cdl.csv",
+      "bytes": 1129,
+      "sha256": "244f503a7c770ed1f2eb3c29a0836f200a1be7d25b1d6b8852641c15035cd9e6"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_2023_cdl.csv",
+      "bytes": 1103,
+      "sha256": "7d90c64702352e776952dda0dda0a1ed8207bb3c2aad7e1e9fd9a9418349ca3c"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_crop_rotation.csv",
+      "bytes": 2390,
+      "sha256": "9dc48e4816b5378e75ce460773b75a8ab3551576b0c9c5f814d9533aad583910"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ia-grower/farms/iowa-demo-farm/derived/tables/iowa_weather_2021_2025.csv",
+      "bytes": 2190338,
+      "sha256": "777add5bcfa2e198fa262fb7f6fec0c78862fd50e5250a5d3b4b875e21fab095"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/boundary/field_boundaries.geojson",
+      "bytes": 79904,
+      "sha256": "32c8f301bde1477a03938248b957fc8781648d4952022485fa7cd2d89ab34177"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_2019_cdl.csv",
+      "bytes": 1826,
+      "sha256": "60d524de7109e540af70a1a4e84148c7d97ca74580205559d506253bb5cf449f"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_2020_cdl.csv",
+      "bytes": 1320,
+      "sha256": "e06559458b3c9aac5eaddbbb2c3ef59217155205bffd91bf7041840159505ffc"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_2021_cdl.csv",
+      "bytes": 1482,
+      "sha256": "9d22150c4b89526f4a27ff19a7e6bf1f9818e332139f5e463aff4dd087e301b5"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_2022_cdl.csv",
+      "bytes": 1275,
+      "sha256": "893a1c7f01b19da561eb9730252d6561c87aea592a671663bd9e329a36eb1c48"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_2023_cdl.csv",
+      "bytes": 1249,
+      "sha256": "f5097285e7a7508d8788146856d7c6ef3f26f7194597f6fd909ff9ab9af4f784"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_crop_rotation.csv",
+      "bytes": 2322,
+      "sha256": "1039c6e822f5111c7201b42f91653651d51931da0a6dec5144a34f7a3f69bee1"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/il-grower/farms/illinois-demo-farm/derived/tables/illinois_demo_weather_2021_2025.csv",
+      "bytes": 2181245,
+      "sha256": "08972c2b06370190083e2d10c5751d1209b83e3ac325cb879bf0c53f39557968"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/boundary/field_boundaries.geojson",
+      "bytes": 28104,
+      "sha256": "12a841442a90d1ed11efa9aa55f491192614b1085b1108dcd3f4e5d51bad4b92"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_2019_cdl.csv",
+      "bytes": 1308,
+      "sha256": "34933b5404d37d14a334d723c3a1440f58584211321b554a345bd9f00cd10f1f"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_2020_cdl.csv",
+      "bytes": 1358,
+      "sha256": "2f24956c59238140964af8d7a8d30c73eea9bb09d95ec6b7facb0e2f559b43a0"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_2021_cdl.csv",
+      "bytes": 1322,
+      "sha256": "91661179c3f8178a849311b8b15ba660c837c802a032e840cf6b7bdc9d07c8b4"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_2022_cdl.csv",
+      "bytes": 1182,
+      "sha256": "bbef0b573e1f7b60c7ac50aa8191febb3e126c6ae6c04cf8d8e7e6c84181d0c3"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_2023_cdl.csv",
+      "bytes": 1176,
+      "sha256": "5dae1665aae155125559bee36cd0da52729131abba9472a596cb0142d3ef6d49"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_crop_rotation.csv",
+      "bytes": 2232,
+      "sha256": "1030a05aec5b333806a54e2452480bc3abeb3b0f0d78a76b21c9b45bccf2241e"
+    },
+    {
+      "path": "/home/coder/my-farm-advisor-runtime/data-pipeline/growers/ne-grower/farms/nebraska-demo-farm/derived/tables/nebraska_demo_weather_2021_2025.csv",
+      "bytes": 2169727,
+      "sha256": "8e5d229d8f8b35fc0ae2dc5897e68d4b023a76515469ad1c89d5fa1ad9ed1402"
+    }
+  ],
+  "outputs": {
+    "figures": [
+      "fig_boundary_shape_vs_size.png",
+      "fig_boundary_size_by_grower.png",
+      "fig_cdl_area_weighted_crop_mix.png",
+      "fig_cdl_corn_after_corn_by_year.png",
+      "fig_cdl_crop_sequence_grid.png",
+      "fig_map_three_growers.png",
+      "fig_weather_gdd_accumulation.png",
+      "fig_weather_gdd_precip_coupling.png",
+      "fig_weather_seasonal_precip.png"
+    ],
+    "tables": [
+      "boundary_fields.csv",
+      "boundary_shape_corr.csv",
+      "boundary_size_stats.csv",
+      "boundary_size_test.csv",
+      "boundary_spatial.csv",
+      "cdl_area_mix.csv",
+      "cdl_corn_after_corn_by_transition.csv",
+      "cdl_corn_after_corn_persistence.csv",
+      "cdl_field_rotation_flags.csv",
+      "cdl_primary_crop.csv",
+      "cdl_purity_diagnostics.csv",
+      "cdl_rotation_patterns.csv",
+      "cdl_transition_chisq.csv",
+      "cdl_transition_matrix.csv",
+      "cdl_transition_test.csv",
+      "cdl_transitions.csv",
+      "map_field_index.csv",
+      "weather_gdd_precip_corr.csv",
+      "weather_gdd_precip_sensitivity.csv",
+      "weather_grower_stats.csv",
+      "weather_grower_tests.csv",
+      "weather_grower_year.csv",
+      "weather_seasonal_metrics.csv",
+      "weather_variance_components.csv",
+      "weather_year_summary.csv",
+      "weather_year_variability.csv"
+    ]
+  },
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "geopandas": "1.2.0",
+    "shapely": "2.2.0",
+    "pyproj": "3.8.0"
+  },
+  "warnings": []
+}

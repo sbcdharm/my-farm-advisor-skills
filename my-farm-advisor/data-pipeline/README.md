@@ -8,6 +8,11 @@ Soil provider selection by boundary `country`:
 Per-year crop rotation/crop-type sources by country (CDL, AAFC ACI, and the
 keyless WorldCereal default-model path for every other country):
 [references/crop-rotation-sources.md](references/crop-rotation-sources.md).
+Growing an existing demo farm to more fields, or adding a new state grower,
+without re-running the full pipeline:
+[references/dataset-expansion.md](references/dataset-expansion.md).
+Cross-grower field-level EDA (static figures, tables, and a reproducibility
+manifest): [../eda/field-level-eda/GUIDE.md](../eda/field-level-eda/GUIDE.md).
 ## Example renders
 
 Vision-QC'd sample figures ship under [`examples/`](examples/) — one
@@ -43,6 +48,11 @@ per-year crop class over the boundary) render from the same archive with
 This subskill ships the scripts that build the data-pipeline reports and
 posters. Each runtime host creates its own virtualenv inside the data tree on
 first run; the scripts auto-bootstrap that environment before continuing.
+
+Interactive grower-level web maps from the same canonical boundaries are
+documented in [`grower-web-map/`](grower-web-map/README.md): one lightweight
+HTML file per grower on an ESRI World Imagery basemap, with zoom controls,
+clickable field popups, and a field-list navigator.
 
 ## Quick start
 
